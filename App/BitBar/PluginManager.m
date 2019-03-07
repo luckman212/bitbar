@@ -72,6 +72,7 @@
   
   // add reset, aka refreshMenuItem
   ADD_MENU(@"Reset all", reset, @"r", self);
+  ADD_MENU(@"Refresh all", setupAllPlugins, @"r", self);
 
   [targetMenu addItem:NSMenuItem.separatorItem];
   
