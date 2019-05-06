@@ -12,7 +12,6 @@
 #import "HTMLPlugin.h"
 #import "NSUserDefaults+Settings.h"
 #import "LaunchAtLoginController.h"
-#import <Sparkle/SUUpdater.h>
 
 @interface PluginManager () {
   LaunchAtLoginController *_launchAtLoginController;
@@ -100,7 +99,6 @@
     
     [targetMenu addItem:NSMenuItem.separatorItem];
     
-    ADD_MENU(@"Check for Updates…", checkForUpdates:, nil, [SUUpdater sharedUpdater]);
   }
   
   [targetMenu addItem:versionMenuitem];

@@ -23,13 +23,13 @@
 - initWithManager:(PluginManager*)manager { return (self = self.init) ? _manager = manager, self : nil; }
 
 - (NSStatusItem *)statusItem { return _statusItem = _statusItem ?: ({
-    
+
     // make the status item
     _statusItem = [self.manager.statusBar statusItemWithLength:NSVariableStatusItemLength];
-    
+
     // build the menu
     [self rebuildMenuForStatusItem:_statusItem]; _statusItem; });
-  
+
 }
 
 - (NSImage*) createImageFromBase64:(NSString*)string isTemplate:(BOOL)template{
@@ -51,7 +51,7 @@
   if ([[params[@"dropdown"] lowercaseString] isEqualToString:@"false"]) {
     return nil;
   }
-  
+
   NSString * fullTitle = params[@"title"];
   if (![[params[@"emojize"] lowercaseString] isEqualToString:@"false"]) {
     fullTitle = [fullTitle emojizedString];
@@ -76,14 +76,14 @@
   if (truncLength < titleLength)
     [item setToolTip:fullTitle];
 
-  item.representedObject = params;  
+  item.representedObject = params;
   if (sel) {
     [item setTarget:self];
   }
   BOOL parseANSI = [fullTitle containsANSICodes] && ![[params[@"ansi"] lowercaseString] isEqualToString:@"false"];
   if (params[@"font"] || params[@"size"] || params[@"color"] || parseANSI)
     item.attributedTitle = [self attributedTitleWithParams:params];
-  
+
   if (params[@"alternate"]) {
     item.alternate = YES;
     item.keyEquivalentModifierMask = NSAlternateKeyMask;
@@ -125,7 +125,7 @@
                                        ?: [NSFont menuFontOfSize:size];
   }
 
-  NSDictionary* attributes = @{NSFontAttributeName: font, NSBaselineOffsetAttributeName : @1};
+  NSDictionary* attributes = @{NSFontAttributeName: font, NSBaselineOffsetAttributeName : @0};
   BOOL parseANSI = [fullTitle containsANSICodes] && ![[params[@"ansi"] lowercaseString] isEqualToString:@"false"];
   if (parseANSI) {
     NSMutableAttributedString * attributedTitle = [title attributedStringParsingANSICodes];
@@ -149,36 +149,36 @@
   if (found.location == NSNotFound) return @{ @"title": line };
   NSString * title = [line substringToIndex:found.location];
   NSMutableDictionary * params = @{@"title":title}.mutableCopy;
-  
+
   // Find the parameters
   NSString * paramStr = [line substringFromIndex:found.location + found.length];
 
   NSScanner* scanner = [NSScanner scannerWithString:paramStr];
   NSMutableCharacterSet* keyValueSeparator = [NSMutableCharacterSet characterSetWithCharactersInString:@"=:"];
   NSMutableCharacterSet* quoteSeparator = [NSMutableCharacterSet characterSetWithCharactersInString:@"\"'"];
-  
+
   while (![scanner isAtEnd]) {
     NSString *key = @""; NSString* value = @"";
     [scanner scanUpToCharactersFromSet:keyValueSeparator intoString:&key];
     [scanner scanCharactersFromSet:keyValueSeparator intoString:NULL];
-    
+
     if ([scanner scanCharactersFromSet:quoteSeparator intoString:NULL]) {
       [scanner scanUpToCharactersFromSet:quoteSeparator intoString:&value];
       [scanner scanCharactersFromSet:quoteSeparator intoString:NULL];
     } else {
       [scanner scanUpToString:@" " intoString:&value];
     }
-    
+
     // Remove extraneous spaces from key and value
     key = [key stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     params[key] = value;
-    
+
     if([key isEqualToString:@"args"]){
       params[key] = [value componentsSeparatedByString:@"__"];
     }
   }
-  
+
   return params;
 }
 
@@ -197,10 +197,10 @@
 
 - (void) startTask:(NSMutableDictionary*)params {
     id task = [params[@"root"] isEqualToString:@"true"] ? STPrivilegedTask.new : NSTask.new;
-    
+
     [(NSTask*)task setLaunchPath:params[@"bash"]];
     [(NSTask*)task setArguments:params[@"args"]];
-    
+
     ((NSTask*)task).terminationHandler = ^(NSTask *task) {
       if (params[@"refresh"]) {
         [self performSelectorOnMainThread:@selector(performRefreshNow) withObject:NULL waitUntilDone:false];
@@ -233,7 +233,7 @@
       argArray.copy;
 
     });
-    
+
     if([terminal isEqual: @"false"]){
       NSLog(@"Args: %@", args);
       [params setObject:bash forKey:@"bash"];
@@ -256,13 +256,13 @@
 }
 
 - (void) rebuildMenuForStatusItem:(NSStatusItem*)statusItem {
-  
+
   // build the menu
   NSMenu *menu = NSMenu.new;
   [menu setDelegate:self];
-  
+
   if (self.isMultiline) {
-    
+
     // put all content as an item
     NSString *line;
     if ([self.titleLines count] > 1) {
@@ -276,10 +276,10 @@
       // add the seperator
       [menu addItem:[NSMenuItem separatorItem]];
     }
-    
+
     // are there any allContentLines?
     if (self.allContentLines.count > 0) {
-      
+
       // put all content as an item
       NSString *line;
       for (line in self.allContentLines) {
@@ -287,25 +287,25 @@
           [menu addItem:[NSMenuItem separatorItem]];
         } else {
           NSMenu *submenu = menu;
-          
+
           // traverse submenus up to the menu to add the item to
           while ([line hasPrefix:@"--"]) {
             line = [line substringFromIndex:2];
-            
+
             NSMenuItem *lastItem = submenu.itemArray.lastObject;
-            
+
             if (!lastItem.submenu) {
               lastItem.submenu = [[NSMenu alloc] init];
               lastItem.submenu.delegate = self;
             }
-            
+
             submenu = lastItem.submenu;
-            
+
             if ([line isEqualToString:@"---"]) {
               break;
             }
           }
-          
+
           if ([line isEqualToString:@"---"]) {
             [submenu addItem:[NSMenuItem separatorItem]];
           } else {
@@ -314,62 +314,62 @@
               [submenu addItem:item];
           }
         }
-        
+
       }
-      
+
       // add the seperator
       [menu addItem:[NSMenuItem separatorItem]];
-      
+
     }
-    
+
   }
-  
+
   if (self.lastUpdated != nil) {
-    
+
     self.lastUpdatedMenuItem = [NSMenuItem.alloc initWithTitle:@"Updated just now" action:nil keyEquivalent:@""];
     [menu addItem:self.lastUpdatedMenuItem];
   }
-  
+
   [self addAdditionalMenuItems:menu];
   [self addDefaultMenuItems:menu];
-  
+
   // set the menu
   statusItem.menu = menu;
-  
+
 }
 
 - (void) addDefaultMenuItems:(NSMenu *)menu {
   [self.manager addHelperItemsToMenu:menu asSubMenu:(menu.itemArray.count>0)];
-  
+
 }
 
 - (void) addAdditionalMenuItems:(NSMenu *)menu { }
 
 - (void) changePluginsDirectorySelected:_ {
-  
+
   _manager.path = nil;
   [_manager reset];
 }
 
 - (NSNumber*) refreshIntervalSeconds {
-  
+
   if (_refreshIntervalSeconds == nil) {
-    
+
     NSArray *segments = [self.name componentsSeparatedByString:@"."];
-    
+
     if (segments.count < 3)
       return _refreshIntervalSeconds = @(DEFAULT_TIME_INTERVAL_SECONDS);
-    
+
     NSString *timeStr = [segments[1] lowercaseString];
-    
+
     if ([timeStr length] < 2) {
       _refreshIntervalSeconds = @(DEFAULT_TIME_INTERVAL_SECONDS);
       return _refreshIntervalSeconds;
     }
-    
+
     NSString *numberPart = [timeStr substringToIndex:[timeStr length]-1];
     double numericalValue = numberPart.doubleValue ?: DEFAULT_TIME_INTERVAL_SECONDS;
-    
+
     if ([timeStr hasSuffix:@"s"]) {
       // this is ok - but nothing to do
     } else if ([timeStr hasSuffix:@"m"]) numericalValue *= 60;
@@ -378,13 +378,13 @@
       else
       return _refreshIntervalSeconds = @(DEFAULT_TIME_INTERVAL_SECONDS);
 
-    
+
     _refreshIntervalSeconds = @(numericalValue);
-    
+
   }
-  
+
   return _refreshIntervalSeconds;
-  
+
 }
 
 - (BOOL) refresh {
@@ -397,27 +397,27 @@
 - (NSString*) lastUpdatedString { return [self.lastUpdated timeAgoSinceNow].lowercaseString; }
 
 - (void) cycleLines {
-  
+
   // do nothing if the menu is open
   if (self.menuIsOpen) { return; };
-  
+
   // update the status item
   self.currentLine++;
-  
+
   // if we've gone too far - wrap around
   if ((NSUInteger)self.currentLine >= self.titleLines.count) {
     self.currentLine = 0;
   }
-  
+
   if (self.titleLines.count > 0) {
     NSDictionary * params = [self dictionaryForLine:self.titleLines[self.currentLine]];
-    
+
     // skip alternate line
     if (params[@"alternate"]) {
       [self cycleLines];
       return;
     }
-    
+
     if (params[@"href"] || params[@"bash"] || params[@"refresh"]) {
       self.statusItem.menu = nil;
       self.statusItem.action = @selector(statusItemClicked);
@@ -427,7 +427,7 @@
       self.statusItem.target = nil;
       [self rebuildMenuForStatusItem:self.statusItem];
     }
-    
+
     // Add image if present
     if (params[@"templateImage"]) {
       self.statusItem.image = [self createImageFromBase64:params[@"templateImage"] isTemplate:true];
@@ -436,15 +436,15 @@
     } else {
       self.statusItem.image = nil;
     }
-    
-    
+
+
     self.statusItem.attributedTitle = [self attributedTitleWithParams:params];
     self.pluginIsVisible = YES;
   } else {
     self.statusItem = nil;
     self.pluginIsVisible = NO;
   }
-  
+
 }
 
 - (void) contentHasChanged {
@@ -457,10 +457,10 @@
   if (fontName == nil) {
     return NO;
   }
-  
+
   NSFontDescriptor *fontDescriptor = [NSFontDescriptor fontDescriptorWithFontAttributes:@{NSFontNameAttribute:fontName}];
   NSArray *matches = [fontDescriptor matchingFontDescriptorsWithMandatoryKeys: nil];
-  
+
   return ([matches count] > 0);
 }
 
@@ -487,28 +487,28 @@
 }
 
 - (NSArray *)titleLines {
-  
+
   return _titleLines = _titleLines ?: ({
 
     NSMutableArray *cleanLines = @[].mutableCopy;
-    
+
     for (NSString *lineEval in [self.allContent componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]) {
       // strip whitespace
       NSString *line = [self cleanLine:lineEval];
 
       // add the line if we have something in it
       if (line.length) {
-      
+
         if ([line isEqualToString:@"---"]) break;
-        
+
         [cleanLines addObject:line];
-      
+
       }
-      
+
     }
     cleanLines.copy;
   });
-  
+
 }
 
 - (NSString*) cleanLine:(NSString*)line {
@@ -520,24 +520,24 @@
 }
 
 - (NSArray*) allContentLines {
-  
+
   if (_allContentLines == nil) {
-    
+
     NSArray *lines = [self.allContent componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
     NSMutableArray *cleanLines = [NSMutableArray.alloc initWithCapacity:lines.count];
     NSString *line;
     BOOL firstBreakFound = NO;
 
     for (line in lines) {
-      
+
       // strip whitespace
       line = [self cleanLine:line];
-      
+
       // add the line if we have something in it
       if (line.length > 0) {
-        
+
         if ([line isEqualToString:@"---"]) {
-          
+
           if (firstBreakFound) {
             [cleanLines addObject:line];
           }
@@ -548,17 +548,17 @@
             [cleanLines addObject:line];
           }
         }
-        
+
       }
-      
+
     }
-    
+
     _allContentLines = [NSArray arrayWithArray:cleanLines];
-    
+
   }
-  
+
   return _allContentLines;
-  
+
 }
 
 - (BOOL) isMultiline {
@@ -582,9 +582,9 @@
   if (menu.supermenu) {
     return;
   }
-  
+
   self.menuIsOpen = YES;
-  
+
   if (self.currentLine >= 0 && self.currentLine < self.titleLines.count) {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:[self dictionaryForLine:self.titleLines[self.currentLine]]];
     if (params[@"color"]) {
@@ -592,7 +592,7 @@
       self.statusItem.attributedTitle = [self attributedTitleWithParams:params];
     }
   }
-  
+
   [self.statusItem setHighlightMode:YES];
 
   [self.lastUpdatedMenuItem setTitle:self.lastUpdated ? [NSString stringWithFormat:@"Updated %@", self.lastUpdatedString] : @"Refreshing…"];
@@ -602,10 +602,10 @@
   if (menu.supermenu) {
     return;
   }
-  
+
   self.menuIsOpen = NO;
   [self.statusItem setHighlightMode:NO];
-  
+
   if (self.currentLine >= 0 && self.currentLine < self.titleLines.count) {
     NSDictionary *params = [self dictionaryForLine:self.titleLines[self.currentLine]];
     if (params[@"color"]) {
@@ -622,7 +622,7 @@
       menu.highlightedItem.attributedTitle = [self attributedTitleWithParams:params];
     }
   }
-  
+
   // remove about to be highlighted item color
   if (item.representedObject && item.attributedTitle) {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:item.representedObject];
